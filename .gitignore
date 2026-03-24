@@ -17,7 +17,7 @@ downloads/
 *.mp3
 *.ogg
 *.wav
-*.txt
+downloads/*.txt
 
 # IDEs
 .idea/
