@@ -75,11 +75,15 @@ async def handle_audio(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(file_id=file_id, file_name=file_name)
     await state.set_state(TranscribeProcess.waiting_for_language)
 
-    logger.info(f"Setting state to waiting_for_language for user {message.from_user.id}")
+    logger.info(f"DEBUG: Sent file_id {file_id}. Setting state to {await state.get_state()}")
+
+    kb = get_language_keyboard()
+    logger.info(f"DEBUG: Keyboard type: {type(kb)}")
+    logger.info(f"DEBUG: Keyboard content: {kb.model_dump_json() if hasattr(kb, 'model_dump_json') else kb}")
 
     await message.answer(
         "Выберите язык аудио (или оставьте автоопределение):",
-        reply_markup=get_language_keyboard()
+        reply_markup=kb
     )
 
 @router.callback_query(F.data.startswith("lang_"), StateFilter(TranscribeProcess.waiting_for_language))

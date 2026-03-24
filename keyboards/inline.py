@@ -2,32 +2,29 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 def get_language_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    
-    # Callback data format: lang_<code> (e.g., lang_ru)
-    buttons = [
-        InlineKeyboardButton(text="Автоопределение", callback_data="lang_auto"),
-        InlineKeyboardButton(text="Русский", callback_data="lang_ru"),
-        InlineKeyboardButton(text="English", callback_data="lang_en"),
-        InlineKeyboardButton(text="Español", callback_data="lang_es"),
-        InlineKeyboardButton(text="Français", callback_data="lang_fr"),
-        InlineKeyboardButton(text="Deutsch", callback_data="lang_de")
-    ]
-    
-    for button in buttons:
-        builder.add(button)
-    
-    builder.adjust(1, 2, 2, 1)
-    return builder.as_markup()
+    # Возвращаем напрямую InlineKeyboardMarkup для исключения проблем с билдером
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Автоопределение", callback_data="lang_auto")],
+            [
+                InlineKeyboardButton(text="Русский", callback_data="lang_ru"),
+                InlineKeyboardButton(text="English", callback_data="lang_en")
+            ],
+            [
+                InlineKeyboardButton(text="Español", callback_data="lang_es"),
+                InlineKeyboardButton(text="Français", callback_data="lang_fr")
+            ],
+            [InlineKeyboardButton(text="Deutsch", callback_data="lang_de")]
+        ]
+    )
     
 def get_diarization_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.add(
-        InlineKeyboardButton(text="Да, разделить по спикерам", callback_data="diar_yes"),
-        InlineKeyboardButton(text="Нет, просто текст", callback_data="diar_no")
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Да, разделить по спикерам", callback_data="diar_yes")],
+            [InlineKeyboardButton(text="Нет, просто текст", callback_data="diar_no")]
+        ]
     )
-    builder.adjust(1)
-    return builder.as_markup()
 
 def get_billing_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()

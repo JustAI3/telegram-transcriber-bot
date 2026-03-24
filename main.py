@@ -36,11 +36,14 @@ async def main():
     )
     dp = Dispatcher(storage=MemoryStorage())
     
+    # Регистрация роутеров ПЕРЕД командами и стартом
     dp.include_router(user_handlers.router)
     
     # Run bot
     await set_bot_commands(bot)
     await bot.delete_webhook(drop_pending_updates=True)
+    
+    print("Бот запущен...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
