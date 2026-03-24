@@ -1,6 +1,7 @@
 import os
+import logging
 from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart, Command, StateFilter
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -11,12 +12,14 @@ from services.transcriber import async_transcribe, format_transcript
 import database as db
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-@router.message(CommandStart())
-async def cmd_start(message: Message):
+@router.message(CommandStart(), StateFilter("*"))
+async def cmd_start(message: Message, state: FSMContext):
+    await state.clear()
     db.get_user(message.from_user.id) # Init user
     text = (
         "Привет! Я бот для транскрибации аудио с помощью мощной нейросети AssemblyAI.\n\n"
@@ -25,6 +28,11 @@ async def cmd_start(message: Message):
         "⚡️ В данный момент бот работает полностью бесплатно и без ограничений!"
     )
     await message.answer(text)
+
+@router.message(Command("cancel"), StateFilter("*"))
+async def cmd_cancel(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Действие отменено. Вы можете отправить новый файл.")
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
@@ -38,8 +46,9 @@ async def cmd_help(message: Message):
     )
     await message.answer(text)
 
-@router.message(F.audio | F.voice | F.document | F.video | F.video_note)
+@router.message(F.audio | F.voice | F.document | F.video | F.video_note, StateFilter("*"))
 async def handle_audio(message: Message, state: FSMContext, bot: Bot):
+    logger.info(f"Received audio/file from user {message.from_user.id}")
     if message.document:
         mime_type = message.document.mime_type
         if mime_type and not mime_type.startswith("audio/") and not mime_type.startswith("video/"):
