@@ -6,6 +6,7 @@ from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardMar
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from config import BOT_TOKEN
 from keyboards.inline import get_language_keyboard, get_diarization_keyboard
 from handlers.states import TranscribeProcess
 from services.transcriber import async_transcribe, format_transcript
@@ -139,15 +140,29 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         file = await bot.get_file(file_id)
         file_path = os.path.join(DOWNLOAD_DIR, f"{file.file_id}_{file_name}")
         
+        # Используем прямой HTTP запрос для больших файлов
         try:
+            import aiohttp
+            telegram_file_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file.file_path}"
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(telegram_file_url) as response:
+                    if response.status == 200:
+                        with open(file_path, 'wb') as f:
+                            async for chunk in response.content.iter_chunked(8192):
+                                f.write(chunk)
+                    else:
+                        raise Exception(f"Telegram HTTP {response.status}: file is too big")
+        except ImportError:
+            # Если aiohttp не установлен, используем стандартный метод
             await bot.download(file.file_id, destination=file_path)
         except Exception as download_error:
             error_str = str(download_error)
-            if "file is too big" in error_str.lower() or "too big" in error_str.lower():
+            if "file is too big" in error_str.lower() or "too big" in error_str.lower() or "HTTP 400" in error_str:
                 await callback.message.edit_text(
                     "⚠️ Файл слишком большой для загрузки.\n\n"
-                    "Telegram не позволяет скачать файлы больше ~20MB.\n"
-                    "Пожалуйста, отправьте более короткий файл."
+                    "Telegram не позволяет скачать файлы больше ~20MB через бота.\n"
+                    "Попробуйте переслать файл как аудио или уменьшить размер."
                 )
                 log_error(callback.from_user.id, "FILE_TOO_BIG_DOWNLOAD", error_str)
                 await state.clear()
@@ -168,7 +183,16 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         with open(result_path, "w", encoding="utf-8") as f:
             f.write(formatted_text)
             
-        # Send TXT file (always send as file to avoid "file is too big" errors)
+        # Send text in quote first
+        if len(formatted_text) <= 4000:
+            try:
+                await callback.message.answer(f"<blockquote>{formatted_text}</blockquote>", parse_mode="HTML")
+            except Exception as text_error:
+                log_error(callback.from_user.id, "SEND_TEXT_ERROR", str(text_error))
+        else:
+            await callback.message.answer("Текст слишком длинный, отправляю файлом.")
+        
+        # Send TXT file
         try:
             document = FSInputFile(result_path, filename=result_filename)
             await callback.message.answer_document(document)
@@ -176,7 +200,7 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
             error_str = str(doc_error)
             if "file is too big" in error_str.lower():
                 await callback.message.answer(
-                    "⚠️ Не удалось отправить файл. Попробуйте с более коротким аудио."
+                    "⚠️ Не удалось отправить файл результата. Текст уже отправлен в чат."
                 )
                 log_error(callback.from_user.id, "SEND_DOC_ERROR", error_str)
             else:
