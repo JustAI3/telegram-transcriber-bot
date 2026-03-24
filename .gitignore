@@ -1,0 +1,25 @@
+# Virtual environment
+venv/
+env/
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite database
+bot.db
+*.sqlite3
+
+# Downloads directory
+downloads/
+*.mp3
+*.ogg
+*.wav
+*.txt
+
+# IDEs
+.idea/
+.vscode/
+*.swp
