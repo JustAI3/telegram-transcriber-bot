@@ -52,33 +52,6 @@ async def cmd_help(message: Message):
 async def handle_audio(message: Message, state: FSMContext, bot: Bot):
     logger.info(f"HANDLING_AUDIO_START: User {message.from_user.id}")
     
-    # Проверка размера файла до загрузки
-    MAX_FILE_SIZE_MB = 75  # Lim AssemblyAI API ~100MB, оставляем запас
-    file_size_mb = 0
-    
-    if message.audio:
-        file_size_mb = message.audio.file_size / (1024 * 1024) if message.audio.file_size else 0
-    elif message.voice:
-        file_size_mb = message.voice.file_size / (1024 * 1024) if message.voice.file_size else 0
-    elif message.document:
-        file_size_mb = message.document.file_size / (1024 * 1024) if message.document.file_size else 0
-    elif message.video:
-        file_size_mb = message.video.file_size / (1024 * 1024) if message.video.file_size else 0
-    elif message.video_note:
-        file_size_mb = message.video_note.file_size / (1024 * 1024) if message.video_note.file_size else 0
-    
-    if file_size_mb > MAX_FILE_SIZE_MB:
-        await message.answer(
-            f"⚠️ Файл слишком большой ({file_size_mb:.1f} МБ).\n\n"
-            f"Максимальный размер: {MAX_FILE_SIZE_MB} МБ.\n\n"
-            "Пожалуйста, отправьте более короткий файл или разделите аудио на части."
-        )
-        log_event(message.from_user.id, "FILE_TOO_BIG", {"size_mb": file_size_mb})
-        return
-    
-    if file_size_mb > 0:
-        logger.info(f"FILE_SIZE: {file_size_mb:.1f} MB")
-    
     if message.document:
         mime_type = message.document.mime_type
         logger.info(f"DOC_MIME: {mime_type}")
@@ -180,20 +153,6 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
                 await state.clear()
                 return
             raise
-        
-        # Проверка размера после загрузки
-        actual_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-        if actual_size_mb > 80:  # AssemblyAI limit is 100MB, give some buffer
-            await callback.message.edit_text(
-                f"⚠️ Файл слишком большой ({actual_size_mb:.1f} МБ).\n\n"
-                "Максимальный размер для AssemblyAI: ~80 МБ.\n"
-                "Пожалуйста, отправьте более короткий файл."
-            )
-            log_event(callback.from_user.id, "FILE_TOO_BIG_AFTER_DOWNLOAD", {"size_mb": actual_size_mb})
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            await state.clear()
-            return
         
         # Transcribe
         await callback.message.edit_text("⏳ Файл загружен. Идет обработка нейросетью AssemblyAI...")
