@@ -5,16 +5,17 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     
     # Callback data format: lang_<code> (e.g., lang_ru)
-    # Используем .add(InlineKeyboardButton(...)) для большей надежности в некоторых версиях aiogram 3
-    
-    builder.add(
+    buttons = [
         InlineKeyboardButton(text="Автоопределение", callback_data="lang_auto"),
         InlineKeyboardButton(text="Русский", callback_data="lang_ru"),
         InlineKeyboardButton(text="English", callback_data="lang_en"),
         InlineKeyboardButton(text="Español", callback_data="lang_es"),
         InlineKeyboardButton(text="Français", callback_data="lang_fr"),
         InlineKeyboardButton(text="Deutsch", callback_data="lang_de")
-    )
+    ]
+    
+    for button in buttons:
+        builder.add(button)
     
     builder.adjust(1, 2, 2, 1)
     return builder.as_markup()

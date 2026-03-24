@@ -75,24 +75,28 @@ async def handle_audio(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(file_id=file_id, file_name=file_name)
     await state.set_state(TranscribeProcess.waiting_for_language)
 
+    logger.info(f"Setting state to waiting_for_language for user {message.from_user.id}")
+
     await message.answer(
         "Выберите язык аудио (или оставьте автоопределение):",
         reply_markup=get_language_keyboard()
     )
 
-@router.callback_query(F.data.startswith("lang_"), TranscribeProcess.waiting_for_language)
+@router.callback_query(F.data.startswith("lang_"), StateFilter(TranscribeProcess.waiting_for_language))
 async def process_language_selection(callback: CallbackQuery, state: FSMContext):
     lang_code = callback.data.split("_")[1]
     await state.update_data(lang_code=lang_code)
     
     await state.set_state(TranscribeProcess.waiting_for_diarization)
+    logger.info(f"Setting state to waiting_for_diarization for user {callback.from_user.id}")
+
     await callback.message.edit_text(
         "Определять разных спикеров (говорящих) на записи?\n\n"
         "Разделение по спикерам делает текст удобнее, но обработка может занять чуть больше времени.",
         reply_markup=get_diarization_keyboard()
     )
 
-@router.callback_query(F.data.startswith("diar_"), TranscribeProcess.waiting_for_diarization)
+@router.callback_query(F.data.startswith("diar_"), StateFilter(TranscribeProcess.waiting_for_diarization))
 async def process_diarization_selection(callback: CallbackQuery, state: FSMContext, bot: Bot):
     diarization = True if callback.data == "diar_yes" else False
     
