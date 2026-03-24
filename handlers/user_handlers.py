@@ -48,6 +48,7 @@ async def cmd_help(message: Message):
 
 @router.message(F.audio | F.voice | F.document | F.video | F.video_note, StateFilter("*"))
 async def handle_audio(message: Message, state: FSMContext, bot: Bot):
+    logger.info(f"RECEIVED_CONTENT: Type={type(message)}, Content={message.model_dump_json()[:500]}")
     logger.info(f"Received audio/file from user {message.from_user.id}")
     if message.document:
         mime_type = message.document.mime_type
@@ -75,15 +76,19 @@ async def handle_audio(message: Message, state: FSMContext, bot: Bot):
     await state.update_data(file_id=file_id, file_name=file_name)
     await state.set_state(TranscribeProcess.waiting_for_language)
 
-    logger.info(f"DEBUG: Sent file_id {file_id}. Setting state to {await state.get_state()}")
-
-    kb = get_language_keyboard()
-    logger.info(f"DEBUG: Keyboard type: {type(kb)}")
-    logger.info(f"DEBUG: Keyboard content: {kb.model_dump_json() if hasattr(kb, 'model_dump_json') else kb}")
+    # Упрощенная отправка для теста
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"))
+    builder.row(InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en"))
+    builder.row(InlineKeyboardButton(text="🤖 Авто", callback_data="lang_auto"))
+    
+    markup = builder.as_markup()
+    
+    logger.info(f"DEBUG: Attempting to send message with markup: {markup}")
 
     await message.answer(
-        "Выберите язык аудио (или оставьте автоопределение):",
-        reply_markup=kb
+        "Выберите язык аудио:",
+        reply_markup=markup
     )
 
 @router.callback_query(F.data.startswith("lang_"), StateFilter(TranscribeProcess.waiting_for_language))
