@@ -168,15 +168,19 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         with open(result_path, "w", encoding="utf-8") as f:
             f.write(formatted_text)
             
-        # Send text to chat if small enough
-        if len(formatted_text) <= 4000:
-            await callback.message.answer(f"<blockquote>{formatted_text}</blockquote>", parse_mode="HTML")
-        else:
-            await callback.message.answer("Текст слишком длинный, отправляю файлом.")
-            
-        # Send TXT file
-        document = FSInputFile(result_path, filename=result_filename)
-        await callback.message.answer_document(document)
+        # Send TXT file (always send as file to avoid "file is too big" errors)
+        try:
+            document = FSInputFile(result_path, filename=result_filename)
+            await callback.message.answer_document(document)
+        except Exception as doc_error:
+            error_str = str(doc_error)
+            if "file is too big" in error_str.lower():
+                await callback.message.answer(
+                    "⚠️ Не удалось отправить файл. Попробуйте с более коротким аудио."
+                )
+                log_error(callback.from_user.id, "SEND_DOC_ERROR", error_str)
+            else:
+                raise
         
     except Exception as e:
         log_error(callback.from_user.id, "TRANSCRIBE_ERROR", str(e))
