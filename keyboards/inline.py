@@ -17,6 +17,8 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="Español", callback_data="lang_es")
     builder.button(text="Français", callback_data="lang_fr")
     builder.button(text="Deutsch", callback_data="lang_de")
+    builder.adjust(1, 2, 2, 1)
+    return builder.as_markup()
     
 def get_diarization_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()

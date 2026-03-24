@@ -38,18 +38,24 @@ async def cmd_help(message: Message):
     )
     await message.answer(text)
 
-@router.message(F.audio | F.voice | F.document)
+@router.message(F.audio | F.voice | F.document | F.video | F.video_note)
 async def handle_audio(message: Message, state: FSMContext, bot: Bot):
     if message.document:
         mime_type = message.document.mime_type
         if mime_type and not mime_type.startswith("audio/") and not mime_type.startswith("video/"):
-            await message.answer("Пожалуйста, отправьте аудиофайл.")
+            await message.answer("Пожалуйста, отправьте аудио- или видеофайл.")
             return
         file_id = message.document.file_id
         file_name = message.document.file_name or "audio.mp3"
     elif message.audio:
         file_id = message.audio.file_id
         file_name = message.audio.file_name or "audio.mp3"
+    elif message.video:
+        file_id = message.video.file_id
+        file_name = message.video.file_name or "video.mp4"
+    elif message.video_note:
+        file_id = message.video_note.file_id
+        file_name = "video_note.mp4"
     elif message.voice:
         file_id = message.voice.file_id
         file_name = f"voice_message.ogg"
