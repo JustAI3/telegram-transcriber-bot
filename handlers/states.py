@@ -4,3 +4,10 @@ class TranscribeProcess(StatesGroup):
     waiting_for_language = State()
     waiting_for_diarization = State()
     processing = State()
+
+class BatchTranscribeProcess(StatesGroup):
+    """Состояния для пакетной обработки группы файлов"""
+    collecting_files = State()
+    waiting_for_language = State()
+    waiting_for_diarization = State()
+    processing = State()

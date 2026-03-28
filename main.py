@@ -4,8 +4,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, USE_LOCAL_API, LOCAL_API_URL
 from handlers import user_handlers
 from database import init_db
 
@@ -18,7 +20,7 @@ async def set_bot_commands(bot: Bot):
     await bot.set_my_description(description="Привет! Я мощный бот для транскрибации аудио в текст.\n\n"
                                  "Просто отправь мне аудиофайл или перешли голосовое сообщение, "
                                  "и я переведу его в текст, автоматически определив спикеров.\n"
-                                 "Работаю на базе нейросетей AssemblyAI.")
+                                 "Работаю на базе современных нейросетей.")
     await bot.set_my_short_description(short_description="Перевожу ваши голосовые и аудио в текст!")
 
 async def main():
@@ -29,8 +31,16 @@ async def main():
     
     init_db()
     
+    session = None
+    if USE_LOCAL_API:
+        logging.info(f"Using local Telegram Bot API at {LOCAL_API_URL}")
+        session = AiohttpSession(
+            api=TelegramAPIServer.from_base(LOCAL_API_URL)
+        )
+    
     bot = Bot(
         token=BOT_TOKEN,
+        session=session,
         default=DefaultBotProperties(parse_mode="HTML")
     )
     dp = Dispatcher(storage=MemoryStorage())

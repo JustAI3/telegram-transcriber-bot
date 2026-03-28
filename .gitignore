@@ -19,6 +19,9 @@ downloads/
 *.wav
 downloads/*.txt
 
+# Temporary files directory
+temp_files/
+
 # IDEs
 .idea/
 .vscode/
