@@ -10,7 +10,6 @@ services:
     depends_on:
       - telegram-api
     volumes:
-      - bot_data:/app
       - telegram_api_data:/var/lib/telegram-bot-api
     networks:
       - bot-network
@@ -32,7 +31,6 @@ services:
       - 8081
 
 volumes:
-  bot_data:
   telegram_api_data:
 
 networks:
