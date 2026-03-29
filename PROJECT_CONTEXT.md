@@ -44,7 +44,8 @@ telegram-transcriber/
 ├── handlers/
 │   ├── __init__.py         # Экспорт роутеров
 │   ├── states.py           # FSM состояния
-│   └── user_handlers.py    # Основные обработчики сообщений
+│   ├── user_handlers.py    # Основные обработчики сообщений
+│   └── admin_handlers.py   # Админ панель (/adm)
 │
 ├── services/
 │   ├── transcriber.py      # Сервис транскрибации
@@ -261,6 +262,22 @@ async def check_subscription(bot: Bot, user_id: int) -> bool:
 
 ## 🚀 Деплой
 
+### ⚠️ Правильный деплой
+
+**ВАЖНО:** При обновлении кода на сервере всегда выполняй полную пересборку:
+
+```bash
+./deploy.sh
+# ИЛИ вручную:
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+**НЕ используй** `docker compose restart` — это не обновит код в контейнере!
+
+**НЕ монтируй volume к `/app`** — код должен браться из образа.
+
 ### Dockerfile ([`Dockerfile`](Dockerfile))
 - Базовый образ: `python:3.11-slim`
 - Системные зависимости: `ffmpeg`, `build-essential`
@@ -382,6 +399,7 @@ docker-compose down
 
 | Дата | Изменение | Файлы |
 |------|-----------|-------|
+| 2026-03-29 | Добавлена админ панель (/adm) и сбор статистики использования | `handlers/admin_handlers.py`, `database.py`, `handlers/user_handlers.py`, `main.py` |
 | 2026-03-29 | Исправлен docker-compose: удалён volume bot_data:/app для корректных обновлений образа | `docker-compose.yml` |
 | 2026-03-28 | Добавлена система подписки на канал | `services/subscription.py`, `handlers/user_handlers.py`, `keyboards/inline.py` |
 | 2026-03-28 | Поддержка файлов до 200 МБ через локальный API | `config.py`, `main.py`, `docker-compose.yml`, `services/transcriber.py` |

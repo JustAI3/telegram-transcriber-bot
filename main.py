@@ -9,6 +9,7 @@ from aiogram.client.telegram import TelegramAPIServer
 
 from config import BOT_TOKEN, USE_LOCAL_API, LOCAL_API_URL
 from handlers import user_handlers
+from handlers import admin_handlers
 from database import init_db
 
 async def set_bot_commands(bot: Bot):
@@ -46,6 +47,7 @@ async def main():
     dp = Dispatcher(storage=MemoryStorage())
     
     # Регистрация роутеров ПЕРЕД командами и стартом
+    dp.include_router(admin_handlers.router)
     dp.include_router(user_handlers.router)
     
     # Run bot

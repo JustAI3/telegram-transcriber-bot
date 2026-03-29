@@ -374,22 +374,52 @@ async def process_batch_diarization_selection(callback: CallbackQuery, state: FS
             successful += 1
             log_event(callback.from_user.id, "BATCH_FILE_SUCCESS", {"file": file_name, "index": i})
             
+            # Записываем успешную статистику
+            db.add_usage_stat(
+                user_id=callback.from_user.id,
+                file_size_mb=file_data.get("file_size_mb", 0),
+                language=lang_code,
+                success=True
+            )
+            
             # Очищаем файл результата
             await cleanup_after_sending(result_path, callback.from_user.id)
             
         except FileTooBigError as e:
             failed += 1
+            db.add_usage_stat(
+                user_id=callback.from_user.id,
+                file_size_mb=file_data.get("file_size_mb", 0),
+                language=lang_code,
+                success=False,
+                error_message=str(e)
+            )
             await callback.message.answer(f"❌ [{i}/{files_count}] {file_name}: {str(e)}")
             log_error(callback.from_user.id, "BATCH_FILE_TOO_BIG", str(e))
             
         except StorageError as e:
             failed += 1
+            db.add_usage_stat(
+                user_id=callback.from_user.id,
+                file_size_mb=file_data.get("file_size_mb", 0),
+                language=lang_code,
+                success=False,
+                error_message=str(e)
+            )
             await callback.message.answer(f"❌ [{i}/{files_count}] {file_name}: Недостаточно места на сервере")
             log_error(callback.from_user.id, "BATCH_STORAGE_ERROR", str(e))
             
         except Exception as e:
             failed += 1
             error_str = str(e)
+            
+            db.add_usage_stat(
+                user_id=callback.from_user.id,
+                file_size_mb=file_data.get("file_size_mb", 0),
+                language=lang_code,
+                success=False,
+                error_message=error_str
+            )
             
             if "file is too big" in error_str.lower():
                 await callback.message.answer(
@@ -452,6 +482,8 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
     
     result_path = None
     
+    file_size_mb = data.get('file_size_mb', 0)
+    
     try:
         # Используем новую функцию для полного цикла обработки
         formatted_text, result_path = await transcribe_user_file(
@@ -461,6 +493,14 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
             file_name=file_name,
             language_code=lang_code,
             diarization=diarization
+        )
+        
+        # Записываем успешную статистику
+        db.add_usage_stat(
+            user_id=callback.from_user.id,
+            file_size_mb=file_size_mb,
+            language=lang_code,
+            success=True
         )
         
         # Обновляем статус
@@ -491,6 +531,13 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         
     except FileTooBigError as e:
         log_error(callback.from_user.id, "FILE_TOO_BIG", str(e))
+        db.add_usage_stat(
+            user_id=callback.from_user.id,
+            file_size_mb=file_size_mb,
+            language=lang_code,
+            success=False,
+            error_message=str(e)
+        )
         await callback.message.edit_text(
             f"❌ {str(e)}\n\n"
             "Попробуйте сжать файл или отправить его частями."
@@ -500,6 +547,13 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         
     except StorageError as e:
         log_error(callback.from_user.id, "STORAGE_ERROR", str(e))
+        db.add_usage_stat(
+            user_id=callback.from_user.id,
+            file_size_mb=file_size_mb,
+            language=lang_code,
+            success=False,
+            error_message=str(e)
+        )
         await callback.message.edit_text(
             "⚠️ Недостаточно места на сервере.\n\n"
             "Попробуйте позже или обратитесь к администратору."
@@ -512,6 +566,13 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
         
         # Проверяем на ошибку "file is too big" от Telegram
         if "file is too big" in error_str.lower() or "too big" in error_str.lower():
+            db.add_usage_stat(
+                user_id=callback.from_user.id,
+                file_size_mb=file_size_mb,
+                language=lang_code,
+                success=False,
+                error_message="File too big to download"
+            )
             await callback.message.edit_text(
                 "⚠️ Файл слишком большой для загрузки.\n\n"
                 "Telegram не позволяет скачать файлы больше ~20MB через стандартный API.\n"
@@ -521,6 +582,13 @@ async def process_diarization_selection(callback: CallbackQuery, state: FSMConte
             await state.clear()
             return
         
+        db.add_usage_stat(
+            user_id=callback.from_user.id,
+            file_size_mb=file_size_mb,
+            language=lang_code,
+            success=False,
+            error_message=error_str
+        )
         log_error(callback.from_user.id, "TRANSCRIBE_ERROR", error_str)
         await callback.message.answer(f"❌ Произошла ошибка при обработке: {error_str}")
         
