@@ -1,7 +1,7 @@
 # Project Context: Telegram Транскрибатор
 
-> **Последнее обновление:** 2026-03-28  
-> **Версия документации:** 1.0
+> **Последнее обновление:** 2026-03-29  
+> **Версия документации:** 1.1
 
 ---
 
@@ -274,8 +274,9 @@ async def check_subscription(bot: Bot, user_id: int) -> bool:
 2. **telegram-api** — Local Telegram Bot API сервер
 
 **Volumes:**
-- `bot_data` — данные бота
 - `telegram_api_data` — файлы локального API (общий между контейнерами)
+
+> ⚠️ **Важно:** Код бота берётся из Docker образа, а не из volume. При обновлении образа новый код применяется автоматически.
 
 **Сеть:**
 - `bot-network` — внутренняя сеть для связи бота с API
@@ -381,6 +382,7 @@ docker-compose down
 
 | Дата | Изменение | Файлы |
 |------|-----------|-------|
+| 2026-03-29 | Исправлен docker-compose: удалён volume bot_data:/app для корректных обновлений образа | `docker-compose.yml` |
 | 2026-03-28 | Добавлена система подписки на канал | `services/subscription.py`, `handlers/user_handlers.py`, `keyboards/inline.py` |
 | 2026-03-28 | Поддержка файлов до 200 МБ через локальный API | `config.py`, `main.py`, `docker-compose.yml`, `services/transcriber.py` |
 | 2026-03-28 | Пакетная отправка до 5 аудио файлов | `handlers/user_handlers.py`, `handlers/states.py` |
